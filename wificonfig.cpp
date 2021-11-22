@@ -5,14 +5,11 @@
 #else
 #include <ESP8266WiFi.h>
 #endif
+
+#include <arduino_homekit_server.h>
+
 #include "wificonfig.h"
-
-#include "EEPROM.h" 
-
-typedef struct __AP_INFO__ {
-   char ssid[128];
-   char passwd[128];
-}AP_DATA;
+#include "EEPROM.h"
 
 void GuineapigWiFiConfig::printLog(String msg)
 {
@@ -21,7 +18,7 @@ void GuineapigWiFiConfig::printLog(String msg)
         this->logCallback(msg);
 }
 
-void GuineapigWiFiConfig::initConfigWeb()
+void GuineapigWiFiConfig::initConfigWeb(AP_DATA *data)
 {
 #ifdef ESP32
     uint64_t macAddress = ESP.getEfuseMac();
@@ -30,7 +27,6 @@ void GuineapigWiFiConfig::initConfigWeb()
 #else
     auto chipID = ESP.getChipId();
 #endif
-  AP_DATA data;
   
     //Set WiFi AP+STA mode
     auto apSsid = String("ESP-") + String(chipID, HEX);
@@ -83,18 +79,25 @@ void GuineapigWiFiConfig::initConfigWeb()
             this->printlnLog();
             if (timeout > 0)
             {
-                this->printlnLog("connected.");
-                wifiIp = WiFi.localIP().toString();
-                this->printlnLog("IP=" + wifiIp);
-                phase = "CONNECTED";
-                message = "[" + ssid + "]連線成功<br />IP " + wifiIp + "<br />重新啟動後生效";
+              AP_DATA d;
+              
+              this->printlnLog("connected.");
+              wifiIp = WiFi.localIP().toString();
+              this->printlnLog("IP=" + wifiIp);
+              phase = "CONNECTED";
+              message = "[" + ssid + "]連線成功<br />IP " + wifiIp + "<br />重新啟動後生效";
 
-                strncpy(data.ssid, ssid.c_str(), 128);
-                strncpy(data.passwd, passwd.c_str(), 128);
-                EEPROM.put(0, data);
-                EEPROM.commit();                
-                Serial.println("New values are: "+String(data.ssid)+", "+String(data.passwd));
-                
+              strncpy(d.ssid, ssid.c_str(), 32);
+              strncpy(d.passwd, passwd.c_str(), 32);
+
+              Serial.println("New SSID: " + String(d.ssid) + " / " + String(d.passwd));
+              // write to EEPROM
+              // TODO...
+              EEPROM.put(0, d);
+              EEPROM.commit();
+
+              EEPROM.get(0, d);
+              Serial.println("New SSID: " + String(d.ssid) + " / " + String(d.passwd));
             }
             else
             {
@@ -116,7 +119,7 @@ void GuineapigWiFiConfig::initConfigWeb()
 }
 const char *ESP32_WIFI_CONF = "ESP32-WIFI-CONF";
 
-bool GuineapigWiFiConfig::tryConnect(int flag)
+bool GuineapigWiFiConfig::tryConnect(int flag, AP_DATA *data)
 {
   String ssid;// = WiFi.SSID();
   String pwd;// = WiFi.psk();
@@ -126,23 +129,21 @@ bool GuineapigWiFiConfig::tryConnect(int flag)
 
   bool connected = false;
   
-  AP_DATA data;
-  EEPROM.begin(256);
-  EEPROM.get(0, data);
-
   if( flag == 1 ) {
     // normal configure
-    Serial.println("Old values are: "+String(data.ssid)+", "+String(data.passwd));
-    ssid = String(data.ssid);
-    pwd = String(data.passwd);
-  
     this->printlnLog();
     int timeoutCount = 100; //connection timeout = 10s
     
     //flash the LED
     pinMode(LED_BUILTIN, OUTPUT);
     bool onOff = true;
-    if ( ssid == ESP32_WIFI_CONF || (ssid != "" && pwd != "") )
+
+    ssid = String(data->ssid);
+    pwd = String(data->passwd);
+
+    Serial.println("Trying to conect to: " + ssid + " / " + pwd);
+    //if ( ssid == ESP32_WIFI_CONF || (ssid != "" && pwd != "") )
+    if ( ssid != "" && pwd != "" )
     {
       Serial.println("Go station mode");
   
@@ -173,7 +174,7 @@ bool GuineapigWiFiConfig::tryConnect(int flag)
   if (!connected)
   {
     Serial.println("tried failed");
-    this->initConfigWeb();
+    this->initConfigWeb(data);
     return false;
   }
   else
@@ -189,12 +190,12 @@ bool GuineapigWiFiConfig::tryConnect(int flag)
   }
 }
 
-bool GuineapigWiFiConfig::connectWiFi(int flag)
+bool GuineapigWiFiConfig::connectWiFi(int flag, AP_DATA *data)
 {
     delay(2000);
     this->printlnLog("Guineapig WiFiConfig");
     pinMode(LED_BUILTIN, OUTPUT);
-    return tryConnect(flag);
+    return tryConnect(flag, data);
 }
 
 void GuineapigWiFiConfig::clearWiFiConfig()
@@ -204,14 +205,9 @@ void GuineapigWiFiConfig::clearWiFiConfig()
 #else
     WiFi.disconnect(true);
 #endif
-  AP_DATA data;
 
-  memset(&data, 0, sizeof(data));
-  EEPROM.put(0, data);
-  EEPROM.commit();
-  
-    delay(1000);
-    ESP.restart();
+  delay(1000);
+  ESP.restart();
 }
 
 GuineapigWiFiConfig WiFiConfig;
