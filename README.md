@@ -14,7 +14,7 @@ input SSID and password. will check if WiFi connection is ok.<br>
 reset dvice when configure finished.<br>
 will wrtie SSID and password to emulated EEPROM.<br>
 
-## Linrary modification
+## Library modification
 since HomeKit library used user storage space as EEPORM library did, the user data will be overwrite when library initialized.
 need to change HomeKit user storage address to avoid overwrite.
 // src/storage.c
