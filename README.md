@@ -15,11 +15,11 @@ reset dvice when configure finished.<br>
 will wrtie SSID and password to emulated EEPROM.<br>
 
 ## Library modification
-since HomeKit library used user storage space as EEPORM library did, the user data will be overwrite when library initialized.
-need to change HomeKit user storage address to avoid overwrite.
-// src/storage.c
-//#define HOMEKIT_EEPROM_PHYS_ADDR ((uint32_t) (&_EEPROM_start) - 0x40200000)
-#define HOMEKIT_EEPROM_PHYS_ADDR ((uint32_t) (&_EEPROM_start) - 0x40200000 - 0x1000)
+since HomeKit library used user storage space as EEPORM library did, the user data will be overwrite when library initialized.<br>
+need to change HomeKit user storage address to avoid overwrite.<br>
+// src/storage.c<br>
+//#define HOMEKIT_EEPROM_PHYS_ADDR ((uint32_t) (&_EEPROM_start) - 0x40200000)<br>
+#define HOMEKIT_EEPROM_PHYS_ADDR ((uint32_t) (&_EEPROM_start) - 0x40200000 - 0x1000)<br>
 
 by Patrick Lin @ Taiwan<br>
 2021/11/16
