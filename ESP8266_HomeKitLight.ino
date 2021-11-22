@@ -3,37 +3,46 @@
 
 #include "wifi_info.h"
 #include "wificonfig.h"
+#include "EEPROM.h" 
 
 #define LOG_D(fmt, ...)   printf_P(PSTR(fmt "\n") , ##__VA_ARGS__);
 
 #define PIN_KEY     4
 #define PIN_CTRL    5
 
-void setup() {
-  int flag = 0;
+AP_DATA pData;
+
+char buffer[32];
+void hw_init() {
   Serial.begin(115200);
 
   pinMode(PIN_KEY, INPUT);
   pinMode(PIN_CTRL, OUTPUT);
+  digitalWrite(PIN_CTRL, LOW);
+}
+
+void ssid_check(AP_DATA *data) {
+  EEPROM.begin(64);
+  EEPROM.get(0, pData);
+  Serial.println("Read: " + String(pData.ssid) + " / " + String(pData.passwd));
+}
+
+void setup() {
+  int flag = 0;
+  
+  hw_init();
+  ssid_check(&pData);
+
+  Serial.println("\n\n\nRead: " + String(pData.ssid) + " / " + String(pData.passwd));
 
   flag = digitalRead(PIN_KEY);
 
-  if( flag == 1 ) {
-    //key pressed
-    Serial.println("Force go into WiFi configure mode");  
-    digitalWrite(PIN_CTRL, LOW);
-  } else {
-    //key is not pressed
-    for(int i=0; i<3; i++) {
-      digitalWrite(PIN_CTRL, HIGH);
-      delay(300);
-      digitalWrite(PIN_CTRL, LOW);
-      delay(300);
-    }
-  }
+  Serial.print("Key: ");
+  Serial.println(flag);
 
-  WiFiConfig.connectWiFi(flag);
-  homekit_storage_reset(); // to remove the previous HomeKit pairing storage when you first run this new HomeKit example
+  WiFiConfig.connectWiFi(flag, &pData);
+  //wifi_connect();
+  //homekit_storage_reset(); // to remove the previous HomeKit pairing storage when you first run this new HomeKit example
   my_homekit_setup();
 }
 
@@ -54,15 +63,16 @@ static uint32_t next_heap_millis = 0;
 
 //Called when the switch value is changed by iOS Home APP
 void cha_switch_on_setter(const homekit_value_t value) {
-	bool on = value.bool_value;
-	cha_switch_on.value.bool_value = on;	//sync the value
-	LOG_D("Switch: %s", on ? "ON" : "OFF");
-	digitalWrite(PIN_CTRL, on ? LOW : HIGH);
+  bool on = value.bool_value;
+  cha_switch_on.value.bool_value = on;	//sync the value
+  LOG_D("Switch: %s", on ? "ON" : "OFF");
+  
+  digitalWrite(PIN_CTRL, on ? HIGH : LOW);
 }
 
 void my_homekit_setup() {
-	pinMode(PIN_CTRL, OUTPUT);
-	digitalWrite(PIN_CTRL, LOW);
+	//pinMode(PIN_CTRL, OUTPUT);
+	//digitalWrite(PIN_CTRL, LOW);
 
 	//Add the .setter function to get the switch-event sent from iOS Home APP.
 	//The .setter should be added before arduino_homekit_setup.
