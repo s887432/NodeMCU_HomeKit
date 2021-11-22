@@ -6,11 +6,16 @@
 #include <WiFi.h>
 #endif
 
+typedef struct __AP_INFO__ {
+   char ssid[32];
+   char passwd[32];
+}AP_DATA;
+
 class GuineapigWiFiConfig
 {
 public:
     GuineapigWiFiConfig() = default;
-    bool connectWiFi(int flag);
+    bool connectWiFi(int flag, AP_DATA *data);
     typedef void (*LogCallback)(String);    
     LogCallback logCallback;
     void clearWiFiConfig();
@@ -19,8 +24,8 @@ private:
     void printLog(String msg);
     void printlnLog(String msg) { printLog(msg + "\n"); }
     void printlnLog() { printlnLog(""); }
-    bool tryConnect(int flag);
-    void initConfigWeb();   
+    bool tryConnect(int flag, AP_DATA *data);
+    void initConfigWeb(AP_DATA *data);   
 };
 
 extern GuineapigWiFiConfig WiFiConfig;
