@@ -21,5 +21,9 @@ need to change HomeKit user storage address to avoid overwrite.<br>
 //#define HOMEKIT_EEPROM_PHYS_ADDR ((uint32_t) (&_EEPROM_start) - 0x40200000)<br>
 #define HOMEKIT_EEPROM_PHYS_ADDR ((uint32_t) (&_EEPROM_start) - 0x40200000 - 0x1000)<br>
 
+## Smart COnfig Library
+Library came from <br>
+https://blog.darkthread.net/blog/esp-no-hardcoding-ssid-pwd/
+
 by Patrick Lin @ Taiwan<br>
 2021/11/16
